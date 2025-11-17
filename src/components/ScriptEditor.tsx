@@ -70,7 +70,15 @@ export default function ScriptEditor() {
       }
     } catch (err: any) {
       console.error('Script generation error:', err);
-      toast.error(err.message || 'Failed to generate script');
+
+      let errorMessage = 'Failed to generate script';
+      if (err.message?.includes('FunctionsRelayError') || err.message?.includes('not found')) {
+        errorMessage = 'Script generation service is still deploying. Please wait 1-2 minutes and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsGeneratingScript(false);
     }
@@ -109,7 +117,15 @@ export default function ScriptEditor() {
       }
     } catch (err: any) {
       console.error('Storyboard error:', err);
-      toast.error(err.message || 'Failed to generate storyboard');
+
+      let errorMessage = 'Failed to generate storyboard';
+      if (err.message?.includes('FunctionsRelayError') || err.message?.includes('not found')) {
+        errorMessage = 'Storyboard generation service is still deploying. Please wait 1-2 minutes and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsGeneratingStoryboard(false);
     }
@@ -159,7 +175,15 @@ export default function ScriptEditor() {
       }
     } catch (err: any) {
       console.error('Voiceover generation error:', err);
-      toast.error(err.message || 'Failed to generate voiceover');
+
+      let errorMessage = 'Failed to generate voiceover';
+      if (err.message?.includes('FunctionsRelayError') || err.message?.includes('not found')) {
+        errorMessage = 'Voiceover generation service is still deploying. Please wait 1-2 minutes and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsGeneratingVoiceover(false);
     }

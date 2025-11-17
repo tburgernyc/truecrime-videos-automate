@@ -107,8 +107,19 @@ export default function VideoAssembly() {
       }
     } catch (error) {
       console.error('Export error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to export video';
-      toast.error(errorMessage);
+
+      let errorMessage = 'Failed to export video';
+      if (error instanceof Error) {
+        if (error.message.includes('FunctionsRelayError') || error.message.includes('not found')) {
+          errorMessage = 'Video rendering service is still deploying. Please wait 1-2 minutes and try again.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error during video export. Please check your connection and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsAssemblingVideo(false);
     }

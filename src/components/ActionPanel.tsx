@@ -46,9 +46,21 @@ export const ActionPanel: React.FC = () => {
 
       toast.success(`Research Complete! Found ${data.sources.length} sources for ${data.caseName}`);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to research case';
       console.error('Research error:', error);
-      toast.error(errorMessage);
+
+      // Provide detailed error message
+      let errorMessage = 'Failed to research case';
+      if (error instanceof Error) {
+        if (error.message.includes('FunctionsRelayError') || error.message.includes('not found')) {
+          errorMessage = 'Edge Function connection failed. The research service may still be deploying (can take 1-2 minutes). Please try again shortly.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else {
+          errorMessage = `Research failed: ${error.message}`;
+        }
+      }
+
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsResearching(false);
     }

@@ -1,7 +1,6 @@
 # Supabase Configuration File
 
-[project]
-name = "truecrime-videos-automate"
+project_id = "tcwmbwkvflnranchrhyr"
 
 [api]
 enabled = true
@@ -20,10 +19,6 @@ enabled = true
 site_url = "http://localhost:8080"
 additional_redirect_urls = ["http://localhost:3000"]
 jwt_expiry = 3600
-
-[functions]
-# Configure Edge Functions
-enabled = true
 
 [functions.render-video]
 verify_jwt = false
