@@ -1,20 +1,6 @@
-export interface SavedProject {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  currentPhase: number;
-  config: {
-    timeframe: string;
-    language: string;
-    targetRuntime: number;
-  };
-  researchData: any;
-  scriptText: string;
-  storyboardData: any;
-  voiceoverData: any;
-  videoData: any;
-}
+import type { SavedProject } from '@/types';
+
+export type { SavedProject };
 
 const STORAGE_KEY = 'truecrime_projects';
 

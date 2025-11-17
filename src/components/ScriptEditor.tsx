@@ -51,7 +51,7 @@ export default function ScriptEditor() {
             timeline: researchData.timeline,
             keyPeople: researchData.keyPeople,
             locations: researchData.locations,
-            outcome: researchData.outcome
+            outcomes: researchData.outcomes
           },
           config: {
             targetDuration: 10,

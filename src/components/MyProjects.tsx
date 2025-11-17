@@ -18,7 +18,7 @@ export default function MyProjects() {
 
   // Calculate storage usage
   const storageStats = useMemo(() => {
-    const storageData = localStorage.getItem('truecrime-projects');
+    const storageData = localStorage.getItem('truecrime_projects');
     const bytes = storageData ? new Blob([storageData]).size : 0;
     const kb = (bytes / 1024).toFixed(2);
     const mb = (bytes / (1024 * 1024)).toFixed(2);

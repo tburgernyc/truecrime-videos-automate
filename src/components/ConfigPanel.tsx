@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import type { Config } from '@/types';
 
 interface ConfigPanelProps {
-  onConfigChange: (config: any) => void;
+  onConfigChange: (config: Config) => void;
 }
 
 export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {

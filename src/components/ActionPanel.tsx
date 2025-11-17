@@ -4,20 +4,26 @@ import { Input } from '@/components/ui/input';
 import { Search, FileText, Video, Package, Loader2 } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 export const ActionPanel: React.FC = () => {
-  const { config, setCurrentPhase, setResearchData, isResearching, setIsResearching, setCurrentProjectName } = useAppContext();
+  const {
+    config,
+    currentPhase,
+    setCurrentPhase,
+    setResearchData,
+    researchData,
+    scriptText,
+    isResearching,
+    setIsResearching,
+    setCurrentProjectName
+  } = useAppContext();
   const [caseName, setCaseName] = useState('');
 
 
   const handleResearchCase = async () => {
     if (!caseName.trim()) {
-      toast({
-        title: 'Case name required',
-        description: 'Please enter a true crime case name to research',
-        variant: 'destructive'
-      });
+      toast.error('Please enter a true crime case name to research');
       return;
     }
 
@@ -27,7 +33,7 @@ export const ActionPanel: React.FC = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('research-case', {
-        body: { 
+        body: {
           caseName: caseName.trim(),
           timeframe: config.timeframe
         }
@@ -38,45 +44,45 @@ export const ActionPanel: React.FC = () => {
       setResearchData(data);
       setCurrentPhase(2); // Move to next phase after research
 
-      
-      toast({
-        title: 'Research Complete',
-        description: `Found ${data.sources.length} sources for ${data.caseName}`,
-      });
-    } catch (error: any) {
+      toast.success(`Research Complete! Found ${data.sources.length} sources for ${data.caseName}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to research case';
       console.error('Research error:', error);
-      toast({
-        title: 'Research Failed',
-        description: error.message || 'Failed to research case',
-        variant: 'destructive'
-      });
+      toast.error(errorMessage);
     } finally {
       setIsResearching(false);
     }
   };
 
   const handleGenerateScript = () => {
+    if (!researchData) {
+      toast.error('Please complete case research first (Phase 2)');
+      return;
+    }
     setCurrentPhase(2);
-    toast({
-      title: 'Script Generation',
-      description: 'Starting script generation...',
-    });
+    toast.info('Navigate to Phase 3: Script Writing to generate script');
   };
 
   const handleGenerateStoryboard = () => {
+    if (!researchData) {
+      toast.error('Please complete case research first');
+      return;
+    }
+    if (!scriptText || scriptText.trim().length < 100) {
+      toast.error('Please write a script first (minimum 100 characters)');
+      return;
+    }
     setCurrentPhase(3);
-    toast({
-      title: 'Storyboard Creation',
-      description: 'Generating claymation storyboard...',
-    });
+    toast.info('Navigate to Phase 4: Storyboard to generate scenes');
   };
 
   const handlePackaging = () => {
-    setCurrentPhase(4);
-    toast({
-      title: 'YouTube Packaging',
-      description: 'Creating titles, thumbnails, and metadata...',
-    });
+    if (!researchData || !scriptText) {
+      toast.error('Please complete research and script writing first');
+      return;
+    }
+    setCurrentPhase(5);
+    toast.info('Navigate to Phase 6: YouTube Packaging');
   };
 
   return (
@@ -110,26 +116,29 @@ export const ActionPanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Button 
+        <Button
           onClick={handleGenerateScript}
           variant="outline"
-          className="bg-slate-800/50 border-slate-600 hover:bg-slate-700 text-white"
+          disabled={!researchData}
+          className="bg-slate-800/50 border-slate-600 hover:bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FileText className="w-4 h-4 mr-2" />
           Generate Script
         </Button>
-        <Button 
+        <Button
           onClick={handleGenerateStoryboard}
           variant="outline"
-          className="bg-slate-800/50 border-slate-600 hover:bg-slate-700 text-white"
+          disabled={!researchData || !scriptText || scriptText.trim().length < 100}
+          className="bg-slate-800/50 border-slate-600 hover:bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Video className="w-4 h-4 mr-2" />
           Create Storyboard
         </Button>
-        <Button 
+        <Button
           onClick={handlePackaging}
           variant="outline"
-          className="bg-slate-800/50 border-slate-600 hover:bg-slate-700 text-white"
+          disabled={!researchData || !scriptText}
+          className="bg-slate-800/50 border-slate-600 hover:bg-slate-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Package className="w-4 h-4 mr-2" />
           Package Video

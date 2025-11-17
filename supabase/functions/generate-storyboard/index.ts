@@ -1,0 +1,228 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// PRODUCTION: Set ALLOWED_ORIGIN environment variable to your domain (e.g., "https://yourdomain.com")
+const corsHeaders = {
+  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface StoryboardRequest {
+  script: string;
+  caseName: string;
+  visualStyle: string;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const { script, caseName, visualStyle }: StoryboardRequest = await req.json();
+
+    if (!script || script.length < 100) {
+      throw new Error("Valid script is required (minimum 100 characters)");
+    }
+
+    // Parse script into scenes based on structure markers
+    // In production, use AI to intelligently break down the script
+    const scriptSections = script.split(/\[.*?\]/g).filter(s => s.trim().length > 50);
+    const scenesPerSection = Math.ceil(scriptSections.length / 8); // Target ~8-12 scenes
+
+    const generateScenes = (scriptText: string, caseTitle: string) => {
+      const scenes = [];
+      const sections = [
+        { id: "opening", duration: 5, mood: "mysterious", angle: "Medium Close-Up" },
+        { id: "setup-1", duration: 8, mood: "calm", angle: "Wide Shot" },
+        { id: "setup-2", duration: 7, mood: "tense", angle: "Medium Shot" },
+        { id: "rising-1", duration: 6, mood: "suspenseful", angle: "Close-Up" },
+        { id: "rising-2", duration: 8, mood: "dramatic", angle: "Over-the-Shoulder" },
+        { id: "climax-1", duration: 7, mood: "intense", angle: "Dutch Angle" },
+        { id: "climax-2", duration: 6, mood: "shocking", angle: "Extreme Close-Up" },
+        { id: "resolution-1", duration: 8, mood: "somber", angle: "Medium Shot" },
+        { id: "resolution-2", duration: 7, mood: "reflective", angle: "Wide Shot" },
+        { id: "closing", duration: 5, mood: "contemplative", angle: "Medium Close-Up" }
+      ];
+
+      sections.forEach((section, idx) => {
+        const scriptExcerpt = scriptSections[idx]
+          ? scriptSections[idx].substring(0, 150).trim() + "..."
+          : `Scene ${idx + 1} narration from ${caseTitle}`;
+
+        scenes.push({
+          sceneId: `scene-${String(idx + 1).padStart(2, '0')}`,
+          duration: section.duration,
+          scriptExcerpt: scriptExcerpt,
+          visualPrompt: `${visualStyle}. ${section.mood} claymation scene showing ${getCameraDescription(section.angle)}. Color palette: moody teal and amber. Cinematic lighting with dramatic shadows.`,
+          cameraAngle: section.angle,
+          cameraMovement: getCameraMovement(idx),
+          lighting: getLighting(section.mood),
+          mood: section.mood,
+          characters: getCharacters(idx),
+          setting: getSettings(idx, caseTitle),
+          editorNotes: `Focus on ${section.mood} atmosphere. Maintain consistent claymation style.`,
+          previewImage: null // In production, generate with DALL-E, Midjourney API, or Stability AI
+        });
+      });
+
+      return scenes;
+    };
+
+    const getCameraDescription = (angle: string): string => {
+      const descriptions: Record<string, string> = {
+        "Wide Shot": "establishing the environment and context",
+        "Medium Shot": "character interactions and emotional beats",
+        "Close-Up": "emotional intensity and detail",
+        "Medium Close-Up": "personal connection with subjects",
+        "Extreme Close-Up": "critical details and tension",
+        "Over-the-Shoulder": "conversation and confrontation",
+        "Dutch Angle": "unease and disorientation"
+      };
+      return descriptions[angle] || "the scene composition";
+    };
+
+    const getCameraMovement = (sceneIndex: number): string => {
+      const movements = ["Slow Push In", "Static", "Slow Pan Right", "Slow Pull Out", "Handheld", "Slow Dolly", "Crane Up"];
+      return movements[sceneIndex % movements.length];
+    };
+
+    const getLighting = (mood: string): string => {
+      const lightingMap: Record<string, string> = {
+        "mysterious": "Low-key with strong shadows",
+        "calm": "Soft natural lighting",
+        "tense": "High contrast side lighting",
+        "suspenseful": "Dramatic rim lighting",
+        "dramatic": "Strong directional key light",
+        "intense": "High contrast harsh lighting",
+        "shocking": "Sharp overhead lighting",
+        "somber": "Dim ambient lighting",
+        "reflective": "Soft window lighting",
+        "contemplative": "Golden hour warm tones"
+      };
+      return lightingMap[mood] || "Balanced three-point lighting";
+    };
+
+    const getCharacters = (sceneIndex: number): string[] => {
+      const characterSets = [
+        ["Narrator presence"],
+        ["Victim", "Location"],
+        ["Investigators"],
+        ["Key witness", "Detective"],
+        ["Suspect", "Police officer"],
+        ["Lawyer", "Defendant"],
+        ["Judge", "Courtroom"],
+        ["Investigators", "Evidence"],
+        ["Community members"],
+        ["Narrator presence"]
+      ];
+      return characterSets[sceneIndex] || ["Characters"];
+    };
+
+    const getSettings = (sceneIndex: number, title: string): string => {
+      const settings = [
+        "Dark studio background with title card",
+        "Crime scene location exterior",
+        "Police station interior",
+        "Interview room",
+        "Evidence analysis room",
+        "Courtroom",
+        "Courtroom during testimony",
+        "News broadcast setting",
+        "Community location",
+        "Reflective ending backdrop"
+      ];
+      return settings[sceneIndex] || "Relevant location";
+    };
+
+    const scenes = generateScenes(script, caseName);
+    const totalDuration = scenes.reduce((sum, scene) => sum + scene.duration, 0);
+
+    // Generate preview images for scenes using Stability AI
+    const stabilityApiKey = Deno.env.get("STABILITY_API_KEY");
+
+    if (stabilityApiKey) {
+      console.log("Generating images with Stability AI for", scenes.length, "scenes");
+
+      for (let i = 0; i < scenes.length; i++) {
+        const scene = scenes[i];
+        try {
+          // Enhanced prompt for claymation aesthetic
+          const claymationPrompt = `claymation stop-motion animation style, ${scene.visualPrompt}, clay figures, plasticine characters, handcrafted miniature set, studio lighting, textured clay surfaces, fingerprint details visible, artisanal craft aesthetic, true crime documentary scene, moody atmosphere`;
+
+          const negativePrompt = "realistic, photographic, 3D render, CGI, digital art, painting, illustration, cartoon, anime, blurry, low quality";
+
+          const formData = new FormData();
+          formData.append("prompt", claymationPrompt);
+          formData.append("negative_prompt", negativePrompt);
+          formData.append("output_format", "jpeg");
+          formData.append("aspect_ratio", "16:9");
+
+          const imageResponse = await fetch(
+            "https://api.stability.ai/v2beta/stable-image/generate/core",
+            {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${stabilityApiKey}`,
+                "Accept": "image/*",
+              },
+              body: formData,
+            }
+          );
+
+          if (imageResponse.ok) {
+            const imageBlob = await imageResponse.blob();
+            const arrayBuffer = await imageBlob.arrayBuffer();
+            // Use Deno's standard encoding method instead of browser's btoa()
+            const base64Image = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(arrayBuffer))));
+            scene.previewImage = `data:image/jpeg;base64,${base64Image}`;
+            console.log(`✓ Generated image for scene ${i + 1}/${scenes.length}`);
+          } else {
+            const errorText = await imageResponse.text();
+            console.error(`Failed to generate image for scene ${scene.sceneId}:`, errorText);
+            scene.previewImage = null; // Will use placeholder
+          }
+
+          // Rate limiting: wait 1 second between requests to avoid hitting API limits
+          if (i < scenes.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (error) {
+          console.error(`Error generating image for scene ${scene.sceneId}:`, error);
+          scene.previewImage = null; // Will use placeholder
+        }
+      }
+    } else {
+      console.log("No STABILITY_API_KEY found, using placeholder images");
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        storyboard: {
+          scenes: scenes,
+          totalScenes: scenes.length,
+          totalDuration: totalDuration,
+          globalStyle: visualStyle,
+          generatedAt: new Date().toISOString()
+        }
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Error in generate-storyboard:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      }
+    );
+  }
+});

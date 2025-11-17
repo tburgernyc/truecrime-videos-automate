@@ -1,95 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { saveProject as saveToStorage, getAllProjects, getProject, deleteProject as deleteFromStorage, SavedProject } from '@/lib/projectStorage';
-
-
-interface ResearchData {
-  caseName: string;
-  summary: string;
-  timeline: Array<{date: string, event: string}>;
-  keyPeople: Array<{name: string, role: string}>;
-  locations: string[];
-  outcomes: string[];
-  sources: Array<{
-    title: string;
-    url: string;
-    snippet: string;
-    source: string;
-    credibility: 'high' | 'medium' | 'low';
-  }>;
-  sensitiveElements: string[];
-  factCheckingScore: number;
-  researchedAt: string;
-}
-
-interface StoryboardScene {
-  sceneId: string;
-  duration: number;
-  scriptExcerpt: string;
-  visualPrompt: string;
-  cameraAngle: string;
-  cameraMovement: string;
-  lighting: string;
-  mood: string;
-  characters: string[];
-  setting: string;
-  editorNotes: string;
-  previewImage?: string | null;
-}
-
-interface StoryboardData {
-  scenes: StoryboardScene[];
-  totalScenes: number;
-  totalDuration: number;
-  globalStyle: string;
-  generatedAt: string;
-}
-
-interface VoiceoverData {
-  audioData: string | null;
-  duration: number;
-  voiceStyle: 'dramatic' | 'neutral' | 'mysterious';
-  speed: number;
-  pitch: number;
-  timestamps: Array<{
-    time: number;
-    sceneId: string;
-    label: string;
-  }>;
-  generatedAt: string;
-}
-
-interface VideoScene {
-  id: string;
-  sceneId: string;
-  imageUrl: string;
-  duration: number;
-  transition: 'fade' | 'dissolve' | 'cut' | 'wipe';
-  audioStart: number;
-  audioEnd: number;
-  order: number;
-}
-
-interface VideoData {
-  scenes: VideoScene[];
-  totalDuration: number;
-  audioUrl: string | null;
-  exportFormat: 'mp4' | 'mov';
-  resolution: '1080p' | '4k';
-  fps: 30 | 60;
-  generatedAt: string;
-}
+import type { ResearchData, StoryboardData, VoiceoverData, VideoData, Config } from '@/types';
 
 interface AppContextType {
   sidebarOpen: boolean;
   toggleSidebar: () => void;
   currentPhase: number;
   setCurrentPhase: (phase: number) => void;
-  config: {
-    timeframe: string;
-    language: string;
-    targetRuntime: number;
-  };
-  setConfig: (config: any) => void;
+  config: Config;
+  setConfig: (config: Config) => void;
   researchData: ResearchData | null;
   setResearchData: (data: ResearchData | null) => void;
   isResearching: boolean;
@@ -246,13 +165,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
+    // Debounced auto-save with 10-second delay
     const autoSave = setTimeout(() => {
-      if (researchData || scriptText || storyboardData) {
+      if (researchData || scriptText || storyboardData || voiceoverData || videoData) {
         saveCurrentProject();
       }
-    }, 2000);
+    }, 10000); // Increased from 2s to 10s to reduce localStorage writes
+
     return () => clearTimeout(autoSave);
-  }, [researchData, scriptText, storyboardData, voiceoverData, videoData, currentPhase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    researchData,
+    scriptText,
+    storyboardData,
+    voiceoverData,
+    videoData,
+    currentPhase,
+    currentProjectName,
+    config
+  ]);
 
 
   return (

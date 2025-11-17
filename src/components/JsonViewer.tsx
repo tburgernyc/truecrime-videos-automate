@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 interface JsonViewerProps {
-  data: any;
+  data: unknown;
 }
 
 export default function JsonViewer({ data }: JsonViewerProps) {

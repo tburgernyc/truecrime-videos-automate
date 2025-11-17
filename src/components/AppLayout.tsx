@@ -11,6 +11,7 @@ import VideoAssembly from './VideoAssembly';
 import PackagingTools from './PackagingTools';
 import JsonViewer from './JsonViewer';
 import { useAppContext } from '@/contexts/AppContext';
+import { ASSETS } from '@/config/assets';
 
 
 
@@ -26,10 +27,10 @@ export default function AppLayout() {
     <div className="min-h-screen bg-slate-950">
       <Header />
       
-      <div 
+      <div
         className="relative h-[60vh] flex items-center justify-center overflow-hidden"
         style={{
-          backgroundImage: `url('https://d64gsuwffb70l.cloudfront.net/6918f6f64cd379db38cb2c8f_1763244094585_67b594a3.webp')`,
+          backgroundImage: `url('${ASSETS.hero.background}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -60,17 +61,17 @@ export default function AppLayout() {
         </h2>
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <FeatureCard
-            icon="https://d64gsuwffb70l.cloudfront.net/6918f6f64cd379db38cb2c8f_1763244095590_b7e761b8.webp"
+            icon={ASSETS.features.discover}
             title="Discover Trending Topics"
             description="Automatically find the most viral true crime stories on YouTube using advanced analytics"
           />
           <FeatureCard
-            icon="https://d64gsuwffb70l.cloudfront.net/6918f6f64cd379db38cb2c8f_1763244096513_2108d4c5.webp"
+            icon={ASSETS.features.research}
             title="Research & Fact-Check"
             description="Deep dive into case details with multi-source verification and ethical storytelling"
           />
           <FeatureCard
-            icon="https://d64gsuwffb70l.cloudfront.net/6918f6f64cd379db38cb2c8f_1763244097395_2fa0b4e4.webp"
+            icon={ASSETS.features.generate}
             title="Generate Scripts"
             description="AI-powered 10-minute narrator scripts optimized for retention and engagement"
           />

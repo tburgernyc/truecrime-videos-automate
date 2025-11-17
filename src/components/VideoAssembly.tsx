@@ -6,10 +6,12 @@ import RenderProgress from './RenderProgress';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import type { VideoScene } from '@/types';
+import { ASSETS } from '@/config/assets';
 
 export default function VideoAssembly() {
   const { storyboardData, voiceoverData, videoData, setVideoData, isAssemblingVideo, setIsAssemblingVideo } = useAppContext();
-  const [scenes, setScenes] = useState<any[]>([]);
+  const [scenes, setScenes] = useState<VideoScene[]>([]);
   const [resolution, setResolution] = useState<'1080p' | '4k'>('1080p');
   const [fps, setFps] = useState<30 | 60>(30);
 
@@ -18,7 +20,7 @@ export default function VideoAssembly() {
       const initialScenes = storyboardData.scenes.map((scene, idx) => ({
         id: `scene-${idx}`,
         sceneId: scene.sceneId,
-        imageUrl: scene.previewImage || 'https://via.placeholder.com/400x300',
+        imageUrl: scene.previewImage || ASSETS.placeholders.scene,
         duration: scene.duration,
         transition: 'fade' as const,
         audioStart: idx > 0 ? storyboardData.scenes.slice(0, idx).reduce((sum, s) => sum + s.duration, 0) : 0,
@@ -33,7 +35,7 @@ export default function VideoAssembly() {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, duration } : s));
   };
 
-  const handleTransitionChange = (id: string, transition: string) => {
+  const handleTransitionChange = (id: string, transition: 'fade' | 'dissolve' | 'cut' | 'wipe') => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, transition } : s));
   };
 
@@ -103,9 +105,10 @@ export default function VideoAssembly() {
           renderStatus: 'processing'
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Export error:', error);
-      toast.error(error.message || 'Failed to export video');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export video';
+      toast.error(errorMessage);
     } finally {
       setIsAssemblingVideo(false);
     }
