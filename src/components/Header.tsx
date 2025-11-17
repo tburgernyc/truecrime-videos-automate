@@ -4,6 +4,13 @@ import { useAppContext } from '@/contexts/AppContext';
 export default function Header() {
   const { saveCurrentProject } = useAppContext();
 
+  const scrollToPhase = (phaseId: string) => {
+    const element = document.getElementById(phaseId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -18,11 +25,11 @@ export default function Header() {
         </div>
         
         <nav className="hidden md:flex items-center gap-6">
-          <a href="#discover" className="text-slate-300 hover:text-white transition text-sm">Discover</a>
-          <a href="#research" className="text-slate-300 hover:text-white transition text-sm">Research</a>
-          <a href="#script" className="text-slate-300 hover:text-white transition text-sm">Script</a>
-          <a href="#storyboard" className="text-slate-300 hover:text-white transition text-sm">Storyboard</a>
-          <a href="#package" className="text-slate-300 hover:text-white transition text-sm">Package</a>
+          <button onClick={() => scrollToPhase('phase1')} className="text-slate-300 hover:text-white transition text-sm">Discover</button>
+          <button onClick={() => scrollToPhase('phase2')} className="text-slate-300 hover:text-white transition text-sm">Research</button>
+          <button onClick={() => scrollToPhase('phase3')} className="text-slate-300 hover:text-white transition text-sm">Script</button>
+          <button onClick={() => scrollToPhase('phase4')} className="text-slate-300 hover:text-white transition text-sm">Storyboard</button>
+          <button onClick={() => scrollToPhase('phase6')} className="text-slate-300 hover:text-white transition text-sm">Package</button>
         </nav>
 
         <div className="flex items-center gap-3">

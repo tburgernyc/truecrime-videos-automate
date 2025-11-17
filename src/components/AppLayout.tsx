@@ -12,11 +12,25 @@ import PackagingTools from './PackagingTools';
 import JsonViewer from './JsonViewer';
 import { useAppContext } from '@/contexts/AppContext';
 import { ASSETS } from '@/config/assets';
+import { toast } from 'sonner';
 
 
 
 export default function AppLayout() {
   const { currentPhase, setCurrentPhase, researchData, isResearching, storyboardData, isGeneratingStoryboard } = useAppContext();
+
+  const handleStartProduction = () => {
+    setCurrentPhase(1);
+    toast.success('Production started! Fill in the case name below to begin research.');
+
+    // Scroll to the workflow section
+    setTimeout(() => {
+      const element = document.getElementById('phase1');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
 
   const outputData = {
     meta: { timeframe: "7_days", language: "English (US)", target_runtime_minutes: 10 },
@@ -46,8 +60,8 @@ export default function AppLayout() {
           <p className="text-xl text-slate-300 mb-8">
             Autonomous YouTube True Crime Video Production Pipeline
           </p>
-          <button 
-            onClick={() => setCurrentPhase(1)}
+          <button
+            onClick={handleStartProduction}
             className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all transform hover:scale-105"
           >
             Start Production
@@ -180,10 +194,10 @@ export default function AppLayout() {
             <div>
               <h5 className="text-white font-semibold mb-3">Features</h5>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#discover" className="hover:text-white transition">Topic Discovery</a></li>
-                <li><a href="#research" className="hover:text-white transition">Case Research</a></li>
-                <li><a href="#script" className="hover:text-white transition">Script Generation</a></li>
-                <li><a href="#storyboard" className="hover:text-white transition">Claymation Storyboard</a></li>
+                <li><a href="#phase1" className="hover:text-white transition">Topic Discovery</a></li>
+                <li><a href="#phase2" className="hover:text-white transition">Case Research</a></li>
+                <li><a href="#phase3" className="hover:text-white transition">Script Generation</a></li>
+                <li><a href="#phase4" className="hover:text-white transition">Claymation Storyboard</a></li>
               </ul>
             </div>
             <div>
