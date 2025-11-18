@@ -40,40 +40,42 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-slate-950">
       <Header />
-      
+
+      {/* Add padding-top to prevent header overlap */}
       <div
-        className="relative h-[60vh] flex items-center justify-center overflow-hidden"
+        className="relative h-[60vh] flex items-center justify-center overflow-hidden mt-20"
         style={{
           backgroundImage: `url('${ASSETS.hero.background}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/50 to-slate-950"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/60 to-slate-950"></div>
         <div className="relative z-10 text-center px-4 max-w-5xl">
-          <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 tracking-tight">
             TRUECRIME<br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-red-600">
               CLAY STUDIO
             </span>
           </h1>
-          <p className="text-xl text-slate-300 mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-6 md:mb-8 max-w-2xl mx-auto">
             Autonomous YouTube True Crime Video Production Pipeline
           </p>
           <button
             onClick={handleStartProduction}
-            className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all transform hover:scale-105"
+            className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:from-red-700 focus:to-red-800 focus:outline-none focus:ring-4 focus:ring-red-500/50 text-white text-sm md:text-base font-semibold rounded-lg transition-all transform hover:scale-105 focus:scale-105 shadow-2xl hover:shadow-red-900/50"
+            aria-label="Start production workflow"
           >
             Start Production
           </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-white text-center mb-12">
+      <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-8 md:mb-12">
           Complete Production Pipeline
         </h2>
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12">
           <FeatureCard
             icon={ASSETS.features.discover}
             title="Discover Trending Topics"
@@ -92,17 +94,17 @@ export default function AppLayout() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
           <ConfigPanel onConfigChange={() => {}} />
           <ProgressBar current={currentPhase} total={7} />
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <ActionPanel />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           <WorkflowPhase
             id="phase1"
             title="Phase 1: Topic Discovery"

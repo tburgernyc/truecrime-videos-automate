@@ -31,23 +31,28 @@ export default function WorkflowPhase({ id, title, description, status, children
   };
 
   return (
-    <div className={`border-2 rounded-xl overflow-hidden transition-all ${statusColors[status]}`}>
+    <div
+      id={id}
+      className={`border-2 rounded-xl overflow-hidden transition-all duration-300 ${statusColors[status]} scroll-mt-24`}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition"
+        className="w-full px-4 md:px-6 py-3 md:py-4 flex items-center justify-between hover:bg-white/5 transition-colors duration-200"
       >
-        <div className="flex items-center gap-4">
-          <span className="text-2xl">{statusIcons[status]}</span>
-          <div className="text-left">
-            <h3 className="text-lg font-bold text-white">{title}</h3>
-            <p className="text-sm text-slate-400">{description}</p>
+        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+          <span className="text-xl md:text-2xl flex-shrink-0">{statusIcons[status]}</span>
+          <div className="text-left flex-1 min-w-0">
+            <h3 className="text-base md:text-lg font-bold text-white truncate">{title}</h3>
+            <p className="text-xs md:text-sm text-slate-400 line-clamp-1">{description}</p>
           </div>
         </div>
-        <span className="text-white text-xl">{expanded ? '−' : '+'}</span>
+        <span className="text-white text-lg md:text-xl ml-2 flex-shrink-0 transition-transform duration-200" style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(0deg)' }}>
+          {expanded ? '−' : '+'}
+        </span>
       </button>
-      
+
       {expanded && children && (
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-4 md:px-6 pb-4 md:pb-6 pt-2 animate-in slide-in-from-top-2 duration-300">
           {children}
         </div>
       )}

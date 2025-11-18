@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <ErrorBoundary>
-    <ThemeProvider defaultTheme="light">
+    <ThemeProvider defaultTheme="dark" forcedTheme="dark">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Sonner />
