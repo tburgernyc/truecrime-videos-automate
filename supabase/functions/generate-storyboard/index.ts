@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// PRODUCTION: Set ALLOWED_ORIGIN environment variable to your domain (e.g., "https://yourdomain.com")
+// CORS configuration - CRITICAL SECURITY SETTING
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+const isDevelopment = Deno.env.get("DENO_ENV") !== "production";
+
+if (!allowedOrigin && !isDevelopment) {
+  console.warn("⚠️ SECURITY WARNING: ALLOWED_ORIGIN not set in production. Using wildcard CORS (not recommended).");
+}
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Origin": allowedOrigin || (isDevelopment ? "*" : "*"),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -157,14 +164,14 @@ serve(async (req) => {
     const scenes = generateScenes(script, caseName);
     const totalDuration = scenes.reduce((sum, scene) => sum + scene.duration, 0);
 
-    // Generate preview images for scenes using Stability AI
+    // Generate preview images for scenes using Stability AI with parallel processing
     const stabilityApiKey = Deno.env.get("STABILITY_API_KEY");
 
     if (stabilityApiKey) {
       console.log("Generating images with Stability AI for", scenes.length, "scenes");
 
-      for (let i = 0; i < scenes.length; i++) {
-        const scene = scenes[i];
+      // Helper function to generate a single image
+      const generateImage = async (scene: any, index: number) => {
         try {
           // Enhanced prompt for claymation aesthetic
           const claymationPrompt = `claymation stop-motion animation style, ${scene.visualPrompt}, clay figures, plasticine characters, handcrafted miniature set, studio lighting, textured clay surfaces, fingerprint details visible, artisanal craft aesthetic, true crime documentary scene, moody atmosphere`;
@@ -195,22 +202,46 @@ serve(async (req) => {
             // Use Deno's standard encoding method instead of browser's btoa()
             const base64Image = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(arrayBuffer))));
             scene.previewImage = `data:image/jpeg;base64,${base64Image}`;
-            console.log(`✓ Generated image for scene ${i + 1}/${scenes.length}`);
+            console.log(`✓ Generated image for scene ${index + 1}/${scenes.length}`);
           } else {
             const errorText = await imageResponse.text();
             console.error(`Failed to generate image for scene ${scene.sceneId}:`, errorText);
             scene.previewImage = null; // Will use placeholder
           }
-
-          // Rate limiting: wait 1 second between requests to avoid hitting API limits
-          if (i < scenes.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
         } catch (error) {
           console.error(`Error generating image for scene ${scene.sceneId}:`, error);
           scene.previewImage = null; // Will use placeholder
         }
+      };
+
+      // Process images in parallel batches with concurrency limit
+      const CONCURRENCY_LIMIT = 10;
+      const batches = [];
+
+      for (let i = 0; i < scenes.length; i += CONCURRENCY_LIMIT) {
+        const batch = scenes.slice(i, i + CONCURRENCY_LIMIT);
+        batches.push(batch);
       }
+
+      // Process each batch sequentially, but items within batch run in parallel
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const batchPromises = batch.map((scene, localIndex) => {
+          const globalIndex = batchIndex * CONCURRENCY_LIMIT + localIndex;
+          return generateImage(scene, globalIndex);
+        });
+
+        await Promise.all(batchPromises);
+
+        // Small delay between batches to respect rate limits
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        console.log(`Completed batch ${batchIndex + 1}/${batches.length}`);
+      }
+
+      console.log(`✓ Completed generating ${scenes.length} images`);
     } else {
       console.log("No STABILITY_API_KEY found, using placeholder images");
     }

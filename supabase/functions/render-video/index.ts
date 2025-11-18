@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-// PRODUCTION: Set ALLOWED_ORIGIN environment variable to your domain (e.g., "https://yourdomain.com")
+// CORS configuration - CRITICAL SECURITY SETTING
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+const isDevelopment = Deno.env.get("DENO_ENV") !== "production";
+
+if (!allowedOrigin && !isDevelopment) {
+  console.warn("⚠️ SECURITY WARNING: ALLOWED_ORIGIN not set in production. Using wildcard CORS (not recommended).");
+}
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Origin": allowedOrigin || (isDevelopment ? "*" : "*"),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -80,33 +87,60 @@ serve(async (req) => {
     const shotstackApiKey = Deno.env.get("SHOTSTACK_API_KEY");
 
     if (shotstackApiKey) {
-      // Build Shotstack timeline
-      const timeline = buildShotstackTimeline(scenes, audioUrl, settings);
+      try {
+        // Build Shotstack timeline
+        const timeline = buildShotstackTimeline(scenes, audioUrl, settings);
 
-      const shotstackResponse = await fetch("https://api.shotstack.io/v1/render", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": shotstackApiKey,
-        },
-        body: JSON.stringify({
-          timeline,
-          output: {
-            format: "mp4",
-            resolution: settings.resolution === "4k" ? "uhd" : "hd",
-            fps: settings.fps,
+        console.log("Submitting render to Shotstack...");
+        const shotstackResponse = await fetch("https://api.shotstack.io/stage/render", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": shotstackApiKey,
           },
-        }),
-      });
+          body: JSON.stringify({
+            timeline,
+            output: {
+              format: "mp4",
+              resolution: settings.resolution === "4k" ? "uhd" : "hd",
+              fps: settings.fps,
+              quality: "high",
+            },
+          }),
+        });
 
-      const shotstackData = await shotstackResponse.json();
+        if (!shotstackResponse.ok) {
+          const errorText = await shotstackResponse.text();
+          throw new Error(`Shotstack API error (${shotstackResponse.status}): ${errorText}`);
+        }
 
-      if (shotstackData.success) {
-        // Update render job with external render ID
+        const shotstackData = await shotstackResponse.json();
+
+        if (shotstackData.success && shotstackData.response?.id) {
+          // Update render job with external render ID
+          await supabaseClient
+            .from("render_jobs")
+            .update({
+              external_render_id: shotstackData.response.id,
+              status: "processing"
+            })
+            .eq("id", renderId);
+
+          console.log(`✓ Shotstack render started with ID: ${shotstackData.response.id}`);
+        } else {
+          throw new Error("Invalid Shotstack response structure");
+        }
+      } catch (shotstackError) {
+        console.error("Shotstack API error:", shotstackError);
+        // Update render job to failed status
         await supabaseClient
           .from("render_jobs")
-          .update({ external_render_id: shotstackData.response.id })
+          .update({
+            status: "failed",
+            error_message: shotstackError.message
+          })
           .eq("id", renderId);
+        throw shotstackError;
       }
     } else {
       // Mock rendering for development/testing
@@ -142,18 +176,38 @@ serve(async (req) => {
 });
 
 function buildShotstackTimeline(scenes: any[], audioUrl: string | null, settings: any) {
-  const clips = scenes.map((scene, index) => ({
-    asset: {
-      type: "image",
-      src: scene.imageUrl,
-    },
-    start: scenes.slice(0, index).reduce((sum, s) => sum + s.duration, 0),
-    length: scene.duration,
-    transition: {
-      in: scene.transition === "fade" ? "fade" : scene.transition,
-      out: scene.transition === "fade" ? "fade" : scene.transition,
-    },
-  }));
+  // Map transition names to Shotstack transition types
+  const transitionMap: Record<string, string> = {
+    'fade': 'fade',
+    'dissolve': 'fade', // Shotstack uses 'fade' for dissolve
+    'cut': 'none',
+    'wipe': 'wipe',
+    'slide': 'slideLeft',
+  };
+
+  let currentTime = 0;
+  const clips = scenes
+    .sort((a, b) => a.order - b.order) // Ensure scenes are in correct order
+    .map((scene, index) => {
+      const clip = {
+        asset: {
+          type: "image" as const,
+          src: scene.imageUrl,
+        },
+        start: currentTime,
+        length: scene.duration,
+        fit: "cover" as const,
+        scale: 1,
+        position: "center" as const,
+        transition: {
+          in: index === 0 ? "fade" : (transitionMap[scene.transition] || "fade"),
+          out: "none" as const,
+        },
+      };
+
+      currentTime += scene.duration;
+      return clip;
+    });
 
   const tracks: any[] = [
     {
@@ -169,9 +223,10 @@ function buildShotstackTimeline(scenes: any[], audioUrl: string | null, settings
           asset: {
             type: "audio",
             src: audioUrl,
+            volume: 1.0,
           },
           start: 0,
-          length: scenes.reduce((sum, s) => sum + s.duration, 0),
+          length: currentTime,
         },
       ],
     });

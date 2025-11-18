@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 
 export default function AppLayout() {
-  const { currentPhase, setCurrentPhase, researchData, isResearching, storyboardData, isGeneratingStoryboard } = useAppContext();
+  const { currentPhase, setCurrentPhase, researchData, isResearching, storyboardData, isGeneratingStoryboard, setConfig } = useAppContext();
 
   const handleStartProduction = () => {
     setCurrentPhase(1);
@@ -96,7 +96,7 @@ export default function AppLayout() {
 
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-          <ConfigPanel onConfigChange={() => {}} />
+          <ConfigPanel onConfigChange={setConfig} />
           <ProgressBar current={currentPhase} total={7} />
         </div>
 

@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-// PRODUCTION: Set ALLOWED_ORIGIN environment variable to your domain (e.g., "https://yourdomain.com")
+// CORS configuration - CRITICAL SECURITY SETTING
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+const isDevelopment = Deno.env.get("DENO_ENV") !== "production";
+
+if (!allowedOrigin && !isDevelopment) {
+  console.warn("⚠️ SECURITY WARNING: ALLOWED_ORIGIN not set in production. Using wildcard CORS (not recommended).");
+}
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Origin": allowedOrigin || (isDevelopment ? "*" : "*"),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -49,18 +56,24 @@ serve(async (req) => {
 
     if (shotstackApiKey && renderJob.external_render_id) {
       try {
+        // Use stage endpoint for development, switch to v1 for production
         const shotstackResponse = await fetch(
-          `https://api.shotstack.io/v1/render/${renderJob.external_render_id}`,
+          `https://api.shotstack.io/stage/render/${renderJob.external_render_id}`,
           {
             headers: {
               "x-api-key": shotstackApiKey,
+              "Accept": "application/json",
             },
           }
         );
 
+        if (!shotstackResponse.ok) {
+          throw new Error(`Shotstack status check failed: ${shotstackResponse.status}`);
+        }
+
         const shotstackData = await shotstackResponse.json();
 
-        if (shotstackData.success) {
+        if (shotstackData.success && shotstackData.response) {
           const externalStatus = shotstackData.response.status;
           const externalProgress = shotstackData.response.progress || 0;
 

@@ -1,19 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// PRODUCTION: Set ALLOWED_ORIGIN environment variable to your domain (e.g., "https://yourdomain.com")
+// CORS configuration - CRITICAL SECURITY SETTING
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+const isDevelopment = Deno.env.get("DENO_ENV") !== "production";
+
+// Security: Warn if wildcard CORS is used
+if (!allowedOrigin && !isDevelopment) {
+  console.warn("⚠️ SECURITY WARNING: ALLOWED_ORIGIN not set in production. Using wildcard CORS (not recommended).");
+}
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Origin": allowedOrigin || (isDevelopment ? "*" : "*"),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface ScriptRequest {
   researchData: {
-    title: string;
+    caseName: string;
     summary: string;
     timeline: Array<{ date: string; event: string }>;
     keyPeople: Array<{ name: string; role: string }>;
     locations: string[];
-    outcome: string | string[];
+    outcomes: string[];
   };
   config: {
     targetDuration: number;
@@ -30,7 +38,7 @@ serve(async (req) => {
   try {
     const { researchData, config }: ScriptRequest = await req.json();
 
-    if (!researchData || !researchData.title) {
+    if (!researchData || !researchData.caseName) {
       throw new Error("Research data is required");
     }
 
@@ -43,7 +51,7 @@ serve(async (req) => {
     const generateTemplateScript = (data: any, wordCount: number): string => {
       return `[OPENING HOOK - 0:00-0:15]
 
-What if I told you that ${data.title} is one of the most mysterious cases in recent history? Stay with me, because what you're about to hear will leave you questioning everything you thought you knew about justice.
+What if I told you that ${data.caseName} is one of the most mysterious cases in recent history? Stay with me, because what you're about to hear will leave you questioning everything you thought you knew about justice.
 
 [ACT 1: SETUP - 0:15-2:30]
 
@@ -71,7 +79,7 @@ As ${data.timeline?.[4]?.event?.toLowerCase() || 'the trial proceeded'}, the pub
 
 [ACT 4: RESOLUTION - 7:30-10:00]
 
-The case of ${data.title} ultimately reached its conclusion, but the impact would be felt for years to come. ${typeof data.outcome === 'string' ? data.outcome : data.outcome?.[0] || 'The resolution brought closure to some, but left others with lingering questions.'}
+The case of ${data.caseName} ultimately reached its conclusion, but the impact would be felt for years to come. ${data.outcomes?.[0] || 'The resolution brought closure to some, but left others with lingering questions.'}
 
 Looking back now, we can see how this case changed everything - from investigative procedures to public awareness. The lessons learned continue to influence how similar cases are handled today.
 
@@ -79,7 +87,7 @@ But perhaps the most important question remains: Have we truly learned from what
 
 [CLOSING REFLECTION]
 
-The story of ${data.title} serves as a stark reminder that truth is often stranger than fiction. It challenges us to think critically, to question what we're told, and to never stop seeking answers.
+The story of ${data.caseName} serves as a stark reminder that truth is often stranger than fiction. It challenges us to think critically, to question what we're told, and to never stop seeking answers.
 
 What do you think? Was justice truly served? Let me know in the comments below. And if you found this video informative, don't forget to like, subscribe, and hit that notification bell for more deep dives into cases that shaped our world.
 
@@ -106,7 +114,7 @@ What do you think? Was justice truly served? Let me know in the comments below. 
               content: "You are a professional true crime documentary script writer. Create engaging, ethical, and factual 10-minute scripts optimized for YouTube retention. Use dramatic storytelling while remaining respectful to victims. Include natural hooks, cliffhangers, and a strong narrative arc."
             }, {
               role: "user",
-              content: `Write a ${targetWordCount}-word true crime documentary script about "${researchData.title}".
+              content: `Write a ${targetWordCount}-word true crime documentary script about "${researchData.caseName}".
 
 Research data:
 - Summary: ${researchData.summary}

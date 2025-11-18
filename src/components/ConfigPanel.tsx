@@ -11,7 +11,7 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
   const [runtime, setRuntime] = useState(10);
 
   const handleChange = () => {
-    onConfigChange({ timeframe, language, runtime });
+    onConfigChange({ timeframe, language, targetRuntime: runtime });
   };
 
   return (

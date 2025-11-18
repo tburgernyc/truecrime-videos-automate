@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// PRODUCTION: Set ALLOWED_ORIGIN environment variable to your domain (e.g., "https://yourdomain.com")
+// CORS configuration - CRITICAL SECURITY SETTING
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+const isDevelopment = Deno.env.get("DENO_ENV") !== "production";
+
+if (!allowedOrigin && !isDevelopment) {
+  console.warn("⚠️ SECURITY WARNING: ALLOWED_ORIGIN not set in production. Using wildcard CORS (not recommended).");
+}
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Origin": allowedOrigin || (isDevelopment ? "*" : "*"),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -78,7 +85,8 @@ serve(async (req) => {
         }
 
         const audioBuffer = await response.arrayBuffer();
-        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+        // Use apply() to avoid stack overflow with large audio files
+        const base64Audio = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(audioBuffer))));
         audioData = `data:audio/mpeg;base64,${base64Audio}`;
       } catch (apiError) {
         console.error("ElevenLabs API error, falling back to mock:", apiError);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
@@ -12,8 +12,19 @@ interface RenderProgressProps {
 export default function RenderProgress({ renderId, onComplete, onCancel }: RenderProgressProps) {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('Processing');
+  const progressRef = useRef(0);
 
   useEffect(() => {
+    // Update ref when progress changes
+    progressRef.current = progress;
+  }, [progress]);
+
+  useEffect(() => {
+    if (!supabase) {
+      toast.error('Supabase not configured - cannot check render status');
+      return;
+    }
+
     const checkStatus = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('check-render-status', {
@@ -32,7 +43,7 @@ export default function RenderProgress({ renderId, onComplete, onCancel }: Rende
           toast.error('Video render failed');
           onCancel();
         } else {
-          setProgress(Math.min(progress + 5, 95));
+          setProgress(prev => Math.min(prev + 5, 95));
         }
       } catch (error) {
         console.error('Status check error:', error);
@@ -40,8 +51,10 @@ export default function RenderProgress({ renderId, onComplete, onCancel }: Rende
     };
 
     const interval = setInterval(checkStatus, 5000);
+    checkStatus(); // Run immediately on mount
+
     return () => clearInterval(interval);
-  }, [renderId, progress]);
+  }, [renderId, onComplete, onCancel]);
 
   return (
     <div className="bg-slate-800 rounded-lg p-6 border border-purple-500/30">
