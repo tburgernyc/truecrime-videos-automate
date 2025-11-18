@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import type { VideoScene } from '@/types';
 import { ASSETS } from '@/config/assets';
+import { InlineLoading } from '@/components/LoadingState';
 
 export default function VideoAssembly() {
   const { storyboardData, voiceoverData, videoData, setVideoData, isAssemblingVideo, setIsAssemblingVideo } = useAppContext();
@@ -257,6 +258,12 @@ export default function VideoAssembly() {
             </Button>
           )}
         </div>
+
+        {isAssemblingVideo && (
+          <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 mt-4">
+            <InlineLoading message="Rendering video with Shotstack API. This may take several minutes..." />
+          </div>
+        )}
       </div>
     </div>
   );

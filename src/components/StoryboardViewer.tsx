@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Film, Clock, Camera } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
+import LoadingState from '@/components/LoadingState';
 
 export const StoryboardViewer: React.FC = () => {
   const { storyboardData, isGeneratingStoryboard } = useAppContext();
@@ -35,10 +36,10 @@ export const StoryboardViewer: React.FC = () => {
 
   if (isGeneratingStoryboard) {
     return (
-      <div className="text-center py-12">
-        <Film className="w-16 h-16 mx-auto mb-4 text-amber-400 animate-pulse" />
-        <p className="text-lg text-slate-300">Generating claymation storyboard...</p>
-      </div>
+      <LoadingState
+        message="Generating 55 claymation scenes with AI... This may take 1-2 minutes"
+        size="lg"
+      />
     );
   }
 

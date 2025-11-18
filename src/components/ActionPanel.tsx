@@ -5,6 +5,7 @@ import { Search, FileText, Video, Package, Loader2 } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { InlineLoading } from '@/components/LoadingState';
 
 export const ActionPanel: React.FC = () => {
   const {
@@ -108,7 +109,7 @@ export const ActionPanel: React.FC = () => {
           className="flex-1 bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
           disabled={isResearching}
         />
-        <Button 
+        <Button
           onClick={handleResearchCase}
           disabled={isResearching}
           className="bg-teal-600 hover:bg-teal-700 text-white"
@@ -126,6 +127,12 @@ export const ActionPanel: React.FC = () => {
           )}
         </Button>
       </div>
+
+      {isResearching && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+          <InlineLoading message="Searching Perplexity AI for case details, timeline, and sources..." />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Button
