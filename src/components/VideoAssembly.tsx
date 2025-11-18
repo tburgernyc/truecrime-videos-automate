@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TimelineScene from './TimelineScene';
 import VideoPreview from './VideoPreview';
@@ -11,7 +11,7 @@ import { ASSETS } from '@/config/assets';
 import { InlineLoading } from '@/components/LoadingState';
 import { retrySupabaseFunction, getErrorMessage } from '@/lib/retry-handler';
 
-export default function VideoAssembly() {
+function VideoAssembly() {
   const { storyboardData, voiceoverData, videoData, setVideoData, isAssemblingVideo, setIsAssemblingVideo } = useAppContext();
   const [scenes, setScenes] = useState<VideoScene[]>([]);
   const [resolution, setResolution] = useState<'1080p' | '4k'>('1080p');
@@ -276,3 +276,4 @@ export default function VideoAssembly() {
   );
 }
 
+export default React.memo(VideoAssembly);

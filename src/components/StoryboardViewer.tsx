@@ -6,7 +6,7 @@ import { Download, Film, Clock, Camera } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import LoadingState from '@/components/LoadingState';
 
-export const StoryboardViewer: React.FC = () => {
+const StoryboardViewer: React.FC = () => {
   const { storyboardData, isGeneratingStoryboard } = useAppContext();
 
   const handleExportJSON = () => {
@@ -123,3 +123,5 @@ export const StoryboardViewer: React.FC = () => {
     </div>
   );
 };
+
+export default React.memo(StoryboardViewer);
