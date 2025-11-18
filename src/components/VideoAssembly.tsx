@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import type { VideoScene } from '@/types';
 import { ASSETS } from '@/config/assets';
 import { InlineLoading } from '@/components/LoadingState';
+import { retrySupabaseFunction, getErrorMessage } from '@/lib/retry-handler';
 
 export default function VideoAssembly() {
   const { storyboardData, voiceoverData, videoData, setVideoData, isAssemblingVideo, setIsAssemblingVideo } = useAppContext();
@@ -64,33 +65,39 @@ export default function VideoAssembly() {
       toast.error('Please assemble timeline first');
       return;
     }
-    
+
     setIsAssemblingVideo(true);
     toast.info('Starting video render...');
-    
+
     try {
-      const { data, error } = await supabase.functions.invoke('render-video', {
-        body: {
+      const data = await retrySupabaseFunction(
+        supabase,
+        'render-video',
+        {
           scenes: videoData.scenes,
           audioUrl: videoData.audioUrl,
           settings: {
             resolution: videoData.resolution === '4k' ? '4k' : '1080p',
             fps: videoData.fps
           }
+        },
+        {
+          maxAttempts: 3,
+          onRetry: (attempt, error) => {
+            toast.info(`${getErrorMessage(error)} (Attempt ${attempt}/3)`, { duration: 3000 });
+          }
         }
-      });
-
-      if (error) throw error;
+      );
 
       if (data.status === 'completed') {
         toast.success('Video rendered successfully!');
-        
+
         // Create download link
         const link = document.createElement('a');
         link.href = data.videoUrl;
         link.download = `truecrime-video-${Date.now()}.mp4`;
         link.click();
-        
+
         // Update video data with the rendered URL
         setVideoData({
           ...videoData,
@@ -109,7 +116,7 @@ export default function VideoAssembly() {
     } catch (error) {
       console.error('Export error:', error);
 
-      let errorMessage = 'Failed to export video';
+      let errorMessage = 'Failed to export video after 3 attempts';
       if (error instanceof Error) {
         if (error.message.includes('FunctionsRelayError') || error.message.includes('not found')) {
           errorMessage = 'Video rendering service is still deploying. Please wait 1-2 minutes and try again.';

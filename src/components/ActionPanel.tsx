@@ -6,6 +6,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { InlineLoading } from '@/components/LoadingState';
+import { retrySupabaseFunction, getErrorMessage } from '@/lib/retry-handler';
 
 export const ActionPanel: React.FC = () => {
   const {
@@ -33,14 +34,20 @@ export const ActionPanel: React.FC = () => {
     setCurrentProjectName(caseName.trim()); // Set project name to case name
 
     try {
-      const { data, error } = await supabase.functions.invoke('research-case', {
-        body: {
+      const data = await retrySupabaseFunction(
+        supabase,
+        'research-case',
+        {
           caseName: caseName.trim(),
           timeframe: config.timeframe
+        },
+        {
+          maxAttempts: 3,
+          onRetry: (attempt, error) => {
+            toast.info(`${getErrorMessage(error)} (Attempt ${attempt}/3)`, { duration: 3000 });
+          }
         }
-      });
-
-      if (error) throw error;
+      );
 
       setResearchData(data);
       setCurrentPhase(2); // Move to next phase after research
@@ -50,7 +57,7 @@ export const ActionPanel: React.FC = () => {
       console.error('Research error:', error);
 
       // Provide detailed error message
-      let errorMessage = 'Failed to research case';
+      let errorMessage = 'Failed to research case after 3 attempts';
       if (error instanceof Error) {
         if (error.message.includes('FunctionsRelayError') || error.message.includes('not found')) {
           errorMessage = 'Edge Function connection failed. The research service may still be deploying (can take 1-2 minutes). Please try again shortly.';

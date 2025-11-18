@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { retrySupabaseFunction, getErrorMessage } from '@/lib/retry-handler';
 
 export default function ScriptEditor() {
   const { 
@@ -43,8 +44,10 @@ export default function ScriptEditor() {
     toast.info('AI is writing your script...');
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-script', {
-        body: {
+      const data = await retrySupabaseFunction(
+        supabase,
+        'generate-script',
+        {
           researchData: {
             title: researchData.caseName,
             summary: researchData.summary,
@@ -57,21 +60,21 @@ export default function ScriptEditor() {
             targetDuration: 10,
             style: 'documentary'
           }
+        },
+        {
+          maxAttempts: 3,
+          onRetry: (attempt, error) => {
+            toast.info(`${getErrorMessage(error)} (Attempt ${attempt}/3)`, { duration: 3000 });
+          }
         }
-      });
+      );
 
-      if (error) throw error;
-
-      if (data.success) {
-        setScriptText(data.script.content);
-        toast.success(`Script generated! ${data.script.wordCount} words (~${Math.round(data.script.estimatedDuration / 60)} min)`);
-      } else {
-        throw new Error(data.error || 'Failed to generate script');
-      }
+      setScriptText(data.script.content);
+      toast.success(`Script generated! ${data.script.wordCount} words (~${Math.round(data.script.estimatedDuration / 60)} min)`);
     } catch (err: any) {
       console.error('Script generation error:', err);
 
-      let errorMessage = 'Failed to generate script';
+      let errorMessage = 'Failed to generate script after 3 attempts';
       if (err.message?.includes('FunctionsRelayError') || err.message?.includes('not found')) {
         errorMessage = 'Script generation service is still deploying. Please wait 1-2 minutes and try again.';
       } else if (err.message) {
@@ -92,33 +95,35 @@ export default function ScriptEditor() {
     }
 
     setIsGeneratingStoryboard(true);
-    toast.info('Generating claymation storyboard...');
+    toast.info('Generating 55 claymation scenes... This may take 1-2 minutes.', { duration: 5000 });
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: {
+      const data = await retrySupabaseFunction(
+        supabase,
+        'generate-storyboard',
+        {
           script: scriptText,
           caseName: researchData?.caseName || 'True Crime Case',
           visualStyle: 'High-detail claymation with cinematic lighting, moody teal/amber color grade, documentary feel'
+        },
+        {
+          maxAttempts: 3,
+          onRetry: (attempt, error) => {
+            toast.info(`${getErrorMessage(error)} (Attempt ${attempt}/3)`, { duration: 3000 });
+          }
         }
+      );
+
+      setStoryboardData({
+        ...data.storyboard,
+        generatedAt: new Date().toISOString()
       });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setStoryboardData({
-          ...data.storyboard,
-          generatedAt: new Date().toISOString()
-        });
-        toast.success(`Generated ${data.storyboard.totalScenes} scenes!`);
-        setCurrentPhase(4); // Move to Phase 4
-      } else {
-        throw new Error(data.error || 'Failed to generate storyboard');
-      }
+      toast.success(`Generated ${data.storyboard.totalScenes} scenes!`);
+      setCurrentPhase(4); // Move to Phase 4
     } catch (err: any) {
       console.error('Storyboard error:', err);
 
-      let errorMessage = 'Failed to generate storyboard';
+      let errorMessage = 'Failed to generate storyboard after 3 attempts';
       if (err.message?.includes('FunctionsRelayError') || err.message?.includes('not found')) {
         errorMessage = 'Storyboard generation service is still deploying. Please wait 1-2 minutes and try again.';
       } else if (err.message) {
@@ -141,42 +146,44 @@ export default function ScriptEditor() {
     toast.info('Generating AI voiceover...');
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-voiceover', {
-        body: {
+      const data = await retrySupabaseFunction(
+        supabase,
+        'generate-voiceover',
+        {
           text: scriptText,
           voiceStyle,
           speed,
           pitch
+        },
+        {
+          maxAttempts: 3,
+          onRetry: (attempt, error) => {
+            toast.info(`${getErrorMessage(error)} (Attempt ${attempt}/3)`, { duration: 3000 });
+          }
         }
+      );
+
+      // Generate timestamps based on storyboard scenes
+      const timestamps = storyboardData?.scenes.map((scene, idx) => ({
+        time: scene.duration * idx,
+        sceneId: scene.sceneId,
+        label: `Scene ${idx + 1}`
+      })) || [];
+
+      setVoiceoverData({
+        audioData: data.audioData,
+        duration: data.duration,
+        voiceStyle,
+        speed,
+        pitch,
+        timestamps,
+        generatedAt: new Date().toISOString()
       });
-
-      if (error) throw error;
-
-      if (data.success) {
-        // Generate timestamps based on storyboard scenes
-        const timestamps = storyboardData?.scenes.map((scene, idx) => ({
-          time: scene.duration * idx,
-          sceneId: scene.sceneId,
-          label: `Scene ${idx + 1}`
-        })) || [];
-
-        setVoiceoverData({
-          audioData: data.audioData,
-          duration: data.duration,
-          voiceStyle,
-          speed,
-          pitch,
-          timestamps,
-          generatedAt: new Date().toISOString()
-        });
-        toast.success('Voiceover generated successfully!');
-      } else {
-        throw new Error(data.error || 'Failed to generate voiceover');
-      }
+      toast.success('Voiceover generated successfully!');
     } catch (err: any) {
       console.error('Voiceover generation error:', err);
 
-      let errorMessage = 'Failed to generate voiceover';
+      let errorMessage = 'Failed to generate voiceover after 3 attempts';
       if (err.message?.includes('FunctionsRelayError') || err.message?.includes('not found')) {
         errorMessage = 'Voiceover generation service is still deploying. Please wait 1-2 minutes and try again.';
       } else if (err.message) {
