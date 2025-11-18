@@ -1,8 +1,25 @@
+import { useState, useEffect } from 'react';
 import MyProjects from './MyProjects';
 import { useAppContext } from '@/contexts/AppContext';
+import { getStorageStatus, type StorageStatus } from '@/lib/storage-monitor';
+import { AlertTriangle, HardDrive } from 'lucide-react';
 
 export default function Header() {
   const { saveCurrentProject } = useAppContext();
+  const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null);
+
+  useEffect(() => {
+    // Check storage status on mount and every 30 seconds
+    const checkStorage = () => {
+      const status = getStorageStatus();
+      setStorageStatus(status);
+    };
+
+    checkStorage();
+    const interval = setInterval(checkStorage, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const scrollToPhase = (phaseId: string) => {
     const element = document.getElementById(phaseId);
@@ -33,8 +50,25 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {storageStatus && storageStatus.status !== 'healthy' && (
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
+                storageStatus.status === 'critical'
+                  ? 'bg-red-900/30 text-red-400 border border-red-500/30'
+                  : 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30'
+              }`}
+              title={storageStatus.message}
+            >
+              {storageStatus.status === 'critical' ? (
+                <AlertTriangle className="w-4 h-4" />
+              ) : (
+                <HardDrive className="w-4 h-4" />
+              )}
+              <span>{storageStatus.percentageUsed}% Full</span>
+            </div>
+          )}
           <MyProjects />
-          <button 
+          <button
             onClick={saveCurrentProject}
             className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition"
           >
