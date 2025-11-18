@@ -6,7 +6,7 @@ import ActionPanel from './ActionPanel';
 import WorkflowPhase from './WorkflowPhase';
 import { ResearchCard } from './ResearchCard';
 import ScriptEditor from './ScriptEditor';
-import { StoryboardViewer } from './StoryboardViewer';
+import StoryboardViewer from './StoryboardViewer';
 import VideoAssembly from './VideoAssembly';
 import PackagingTools from './PackagingTools';
 import JsonViewer from './JsonViewer';
