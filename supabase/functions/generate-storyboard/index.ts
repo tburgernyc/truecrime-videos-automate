@@ -32,18 +32,37 @@ serve(async (req) => {
 
     const generateScenes = (scriptText: string, caseTitle: string) => {
       const scenes = [];
-      const sections = [
-        { id: "opening", duration: 5, mood: "mysterious", angle: "Medium Close-Up" },
-        { id: "setup-1", duration: 8, mood: "calm", angle: "Wide Shot" },
-        { id: "setup-2", duration: 7, mood: "tense", angle: "Medium Shot" },
-        { id: "rising-1", duration: 6, mood: "suspenseful", angle: "Close-Up" },
-        { id: "rising-2", duration: 8, mood: "dramatic", angle: "Over-the-Shoulder" },
-        { id: "climax-1", duration: 7, mood: "intense", angle: "Dutch Angle" },
-        { id: "climax-2", duration: 6, mood: "shocking", angle: "Extreme Close-Up" },
-        { id: "resolution-1", duration: 8, mood: "somber", angle: "Medium Shot" },
-        { id: "resolution-2", duration: 7, mood: "reflective", angle: "Wide Shot" },
-        { id: "closing", duration: 5, mood: "contemplative", angle: "Medium Close-Up" }
+
+      // Generate enough scenes to cover 10 minutes (~600 seconds)
+      // Target: 50-60 scenes at 10-12 seconds each
+      const targetSceneCount = 55;
+      const baseSceneDuration = 11; // seconds per scene
+
+      // Scene templates with varied moods, angles, and durations
+      const sceneTemplates = [
+        { mood: "mysterious", angle: "Medium Close-Up", durationMod: -1 },
+        { mood: "calm", angle: "Wide Shot", durationMod: 1 },
+        { mood: "tense", angle: "Medium Shot", durationMod: 0 },
+        { mood: "suspenseful", angle: "Close-Up", durationMod: -2 },
+        { mood: "dramatic", angle: "Over-the-Shoulder", durationMod: 1 },
+        { mood: "intense", angle: "Dutch Angle", durationMod: 0 },
+        { mood: "shocking", angle: "Extreme Close-Up", durationMod: -1 },
+        { mood: "somber", angle: "Medium Shot", durationMod: 1 },
+        { mood: "reflective", angle: "Wide Shot", durationMod: 0 },
+        { mood: "contemplative", angle: "Medium Close-Up", durationMod: -1 }
       ];
+
+      // Generate scenes by cycling through templates
+      const sections = [];
+      for (let i = 0; i < targetSceneCount; i++) {
+        const template = sceneTemplates[i % sceneTemplates.length];
+        sections.push({
+          id: `scene-${i + 1}`,
+          duration: baseSceneDuration + template.durationMod,
+          mood: template.mood,
+          angle: template.angle
+        });
+      }
 
       sections.forEach((section, idx) => {
         const scriptExcerpt = scriptSections[idx]
